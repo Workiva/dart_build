@@ -1,4 +1,5 @@
-/*
+dart_build
+
 Copyright 2018 Workiva Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,24 +47,3 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-*/
-import 'dart:async';
-
-import 'package:args/command_runner.dart';
-
-import 'command/build_command.dart';
-import 'command/serve_command.dart';
-import 'util.dart';
-
-export 'util.dart' show appName;
-
-Future<int> run(List<String> args) async {
-  var runner = new CommandRunner<int>(appName,
-      'A CLI that provides dart 1 and dart 2 compatible build and serve commands')
-    ..addCommand(new BuildCommand())
-    ..addCommand(new ServeCommand());
-
-  // In the case of `help`, `null` is returned. Treat that as success.
-  return await runner.run(args) ?? 0;
-}

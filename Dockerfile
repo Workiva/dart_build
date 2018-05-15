@@ -17,9 +17,9 @@ ENV CODECOV_TOKEN='bQ4MgjJ0G2Y73v8JNX6L7yMK9679nbYB'
 RUN echo "Starting the script sections" && \
 	pub get && \
 	pub publish --dry-run && \
-	dartanalyzer lib && \
-	dartfmt -l 80 -n --set-exit-if-changed lib && \
-	tar czvf dart_build.pub.tgz LICENSE README.md pubspec.yaml lib/ && \
+	dartanalyzer bin && \
+	dartfmt -l 80 -n --set-exit-if-changed bin && \
+	tar czvf dart_build.pub.tgz LICENSE README.md pubspec.yaml bin && \
 	echo "Script sections completed"
 # ARG BUILD_ARTIFACTS_WEB_BUILD=/build/build.tar.gz
 # ARG BUILD_ARTIFACTS_DOCUMENTATION=/build/api.tar.gz
