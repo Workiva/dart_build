@@ -80,11 +80,13 @@ final String pubPath =
 
 Future main(List<String> args) async {
   try {
+    // Manually handle all args since we aren't really parsing them
+    // but instead just passing along the List to the appropriate command
     args ??= [];
     args.removeWhere((s) => s == null || s.isEmpty);
 
     if (args.isEmpty || !allowedCommands.contains(args[0])) {
-      print(red.wrap('Specify $_boldApp build or serve'));
+      print(red.wrap('Specify pub run $_boldApp build|serve'));
       exitCode = ExitCode.usage.code;
       return exitCode;
     }
@@ -113,45 +115,19 @@ Future<int> runPub(String command, List<String> extraArgs) async {
   args.add(command);
   args.addAll(extraArgs ?? <String>['']);
   print('Running: ' + blue.wrap('pub ${args.join(" ")}'));
-  // Start pub
   Process pubProcess = await Process.start('pub', args);
-  Completer c = new Completer();
-
-  StreamSubscription stdoutSubscription = pubProcess.stdout
+  pubProcess.stdout
       .transform(UTF8.decoder)
       .transform(const LineSplitter())
       .listen((line) {
-    // The output we get does not have ANSI color codes, because dart:io stdioType
-    // is correctly determining that we are not a terminal.
-    // There is no way to override this that I can tell.
-    // FUTURE - we could mimic the color formatting that pub server has in
-    // https://github.com/dart-lang/pub/blob/master/lib/src/command/serve.dart#L148
-    // Provide pub serve output to the console
     print(line);
-    // Lets the completer know when pub serve has begun serving
-    if (line.startsWith('Build completed successfully') && !c.isCompleted) {
-      c.complete();
-    }
   });
-  StreamSubscription stderrSubscription = pubProcess.stderr
+  pubProcess.stderr
       .transform(UTF8.decoder)
       .transform(const LineSplitter())
       .listen((line) {
-    // Bail if pub serve encounters an error
-    if (!c.isCompleted) {
-      c.completeError(new Exception(line));
-      return;
-    }
     print(red.wrap(line));
   });
-  try {
-    // Wait for pub serve to begin serving
-    await c.future;
-  } catch (e) {
-    await stdoutSubscription.cancel();
-    await stderrSubscription.cancel();
-    print(e);
-  }
   return pubProcess.exitCode;
 }
 
