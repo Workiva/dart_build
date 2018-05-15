@@ -131,17 +131,60 @@ Future<int> runPub(String command, List<String> extraArgs) async {
   return pubProcess.exitCode;
 }
 
-Future<int> runBuildRunner(String command, List<String> extraArgs) async {
-  var buildRunnerScript = await _buildRunnerScript();
+Future<int> runBuildRunner(String command, List<String> args) async {
+  args ??= [];
 
-  final arguments = [command]..addAll(extraArgs ?? const []);
-  if (command == 'build') {
-    arguments.addAll(['--output', 'build']);
-    arguments.add('--release');
-    arguments.add('--fail-on-severe');
+  // print('start args: $args');
+  if (command == 'serve') {
+    // if there aren't any directories listed, look at the
+    // filesystem and add ones that exist
+    bool hasNonFlags = args.any((s) => !s.startsWith('-'));
+    if (!hasNonFlags) {
+      for (String dir in ['web', 'test', 'example']) {
+        if (new Directory(dir).existsSync()) {
+          args.add(dir);
+        }
+      }
+    }
+    // for pub serve --port=#, remove the argument and
+    // combine it with the directory (dir:port)
+    int startPort = 0;
+    List<int> indexesToRemove = [];
+    for (var i = 0; i < args.length; i++) {
+      var s = args[i];
+      if (s.startsWith('--port')) {
+        indexesToRemove.add(i);
+        var pieces = s.split('=');
+        if (pieces.length > 1) {
+          startPort = int.parse(pieces[1]);
+        } else {
+          if (i + 1 < args.length) {
+            i++;
+            startPort = int.parse(args[i]);
+            indexesToRemove.add(i);
+          }
+        }
+      }
+    }
+    for (var i = indexesToRemove.length - 1; i >= 0; i--) {
+      args.removeAt(indexesToRemove[i]);
+    }
+
+    // now append and increment the port to any directories in the list
+    args =
+        args.map((s) => !s.startsWith('-') ? '$s:${startPort++}' : s).toList();
   }
 
+  if (command == 'build') {
+    // TODO only add these is they don't exist already
+    args.addAll(['--output', 'build']);
+    args.add('--release');
+    args.add('--fail-on-severe');
+  }
+  args.insert(0, command);
+  print('Running: ' + blue.wrap('pub run build_runner ${args.join(" ")}'));
   var exitCode = 0;
+  var buildRunnerScript = await _buildRunnerScript();
 
   // Heavily inspired by dart-lang/build @ 0c77443dd7
   // /build_runner/bin/build_runner.dart#L58-L85
@@ -160,7 +203,7 @@ Future<int> runBuildRunner(String command, List<String> extraArgs) async {
   });
 
   try {
-    await Isolate.spawnUri(buildRunnerScript, arguments, messagePort.sendPort,
+    await Isolate.spawnUri(buildRunnerScript, args, messagePort.sendPort,
         onExit: exitPort.sendPort,
         onError: errorPort.sendPort,
         automaticPackageResolution: true);
