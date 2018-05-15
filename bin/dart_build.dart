@@ -60,6 +60,11 @@ import 'package:io/io.dart';
 
 const appName = 'dart_build';
 const List<String> allowedCommands = const <String>['build', 'serve'];
+const List<String> standardDartDirectories = const <String>[
+  'web',
+  'test',
+  'example'
+];
 String get _boldApp => styleBold.wrap(appName);
 const _packagesFileName = '.packages';
 final bool isDart1 = Platform.version.startsWith('1.');
@@ -134,17 +139,12 @@ Future<int> runPub(String command, List<String> extraArgs) async {
 Future<int> runBuildRunner(String command, List<String> args) async {
   args ??= [];
 
-  // print('start args: $args');
   if (command == 'serve') {
     // if there aren't any directories listed, look at the
     // filesystem and add ones that exist
     bool hasNonFlags = args.any((s) => !s.startsWith('-'));
     if (!hasNonFlags) {
-      for (String dir in ['web', 'test', 'example']) {
-        if (new Directory(dir).existsSync()) {
-          args.add(dir);
-        }
-      }
+      args.addAll(findDartDirectories());
     }
     // for pub serve --port=#, remove the argument and
     // combine it with the directory (dir:port)
@@ -166,20 +166,27 @@ Future<int> runBuildRunner(String command, List<String> args) async {
         }
       }
     }
+    // remove the --port #### arguments
+    // backwards so we don't shift indexes and remove the wrong thing
     for (var i = indexesToRemove.length - 1; i >= 0; i--) {
       args.removeAt(indexesToRemove[i]);
     }
 
-    // now append and increment the port to any directories in the list
+    // append and increment the port to directories in the list
     args =
         args.map((s) => !s.startsWith('-') ? '$s:${startPort++}' : s).toList();
   }
 
   if (command == 'build') {
-    // TODO only add these is they don't exist already
-    args.addAll(['--output', 'build']);
-    args.add('--release');
-    args.add('--fail-on-severe');
+    if (!args.contains('--output') && !args.contains('-o')) {
+      args.addAll(['--output', 'build']);
+    }
+    if (!args.contains('--release')) {
+      args.add('--release');
+    }
+    if (!args.contains('--fail-on-severe')) {
+      args.add('--fail-on-severe');
+    }
   }
   args.insert(0, command);
   print('Running: ' + blue.wrap('pub run build_runner ${args.join(" ")}'));
@@ -297,3 +304,13 @@ void main(List<String> args, [SendPort sendPort]) async {
   sendPort.send(p.absolute(scriptLocation));  
 }
 ''';
+
+List<String> findDartDirectories() {
+  List<String> dirs = <String>[];
+  for (String dir in standardDartDirectories) {
+    if (new Directory(dir).existsSync()) {
+      dirs.add(dir);
+    }
+  }
+  return dirs;
+}
