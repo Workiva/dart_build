@@ -19,7 +19,7 @@ RUN echo "Starting the script sections" && \
 	pub publish --dry-run && \
 	dartanalyzer bin && \
 	dartfmt -l 80 -n --set-exit-if-changed bin && \
-	tar czvf dart_build.pub.tgz LICENSE README.md pubspec.yaml lib/ && \
+	tar czvf dart_build.pub.tgz LICENSE README.md pubspec.yaml bin && \
 	echo "Script sections completed"
 # ARG BUILD_ARTIFACTS_WEB_BUILD=/build/build.tar.gz
 # ARG BUILD_ARTIFACTS_DOCUMENTATION=/build/api.tar.gz
