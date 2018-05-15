@@ -59,6 +59,7 @@ import 'package:io/ansi.dart';
 import 'package:io/io.dart';
 
 const appName = 'dart_build';
+const defaultPort = 8080;
 const List<String> allowedCommands = const <String>['build', 'serve'];
 const List<String> standardDartDirectories = const <String>[
   'web',
@@ -148,7 +149,7 @@ Future<int> runBuildRunner(String command, List<String> args) async {
     }
     // for pub serve --port=#, remove the argument and
     // combine it with the directory (dir:port)
-    int startPort = 0;
+    int startPort = defaultPort;
     List<int> indexesToRemove = [];
     for (var i = 0; i < args.length; i++) {
       var s = args[i];
@@ -166,6 +167,9 @@ Future<int> runBuildRunner(String command, List<String> args) async {
         }
       }
     }
+    if (startPort <= 0) {
+      startPort = defaultPort;
+    }
     // remove the --port #### arguments
     // backwards so we don't shift indexes and remove the wrong thing
     for (var i = indexesToRemove.length - 1; i >= 0; i--) {
@@ -175,6 +179,10 @@ Future<int> runBuildRunner(String command, List<String> args) async {
     // append and increment the port to directories in the list
     args =
         args.map((s) => !s.startsWith('-') ? '$s:${startPort++}' : s).toList();
+
+    if (!args.contains('--log-requests')) {
+      args.add('--log-requests');
+    }
   }
 
   if (command == 'build') {
@@ -186,6 +194,14 @@ Future<int> runBuildRunner(String command, List<String> args) async {
     }
     if (!args.contains('--fail-on-severe')) {
       args.add('--fail-on-severe');
+    }
+    if (!args.contains('--delete-conflicting-outputs')) {
+      args.add('--delete-conflicting-outputs');
+    }
+    if (args.contains('-i')) {
+      // enable opting in to interactive
+      args.remove('-i');
+      args.remove('--delete-conflicting-outputs');
     }
   }
   args.insert(0, command);
