@@ -55,11 +55,11 @@ import 'dart:isolate';
 import 'dart:convert';
 import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
-import 'package:args/args.dart';
 import 'package:io/ansi.dart';
 import 'package:io/io.dart';
 
 const appName = 'dart_build';
+const List<String> allowedCommands = const <String>['build', 'serve'];
 String get _boldApp => styleBold.wrap(appName);
 const _packagesFileName = '.packages';
 final bool isDart1 = Platform.version.startsWith('1.');
@@ -80,23 +80,19 @@ final String pubPath =
 
 Future main(List<String> args) async {
   try {
-    // Create the build and serve commands that allow all arguments
-    ArgParser argParser = new ArgParser()
-      ..addCommand('build', new ArgParser.allowAnything())
-      ..addCommand('serve', new ArgParser.allowAnything());
-    ArgResults argResults = argParser.parse(args);
-    ArgResults command = argResults.command;
+    args ??= [];
+    args.removeWhere((s) => s == null || s.isEmpty);
 
-    if (command == null) {
+    if (args.isEmpty || !allowedCommands.contains(args[0])) {
       print(red.wrap('Specify $_boldApp build or serve'));
       exitCode = ExitCode.usage.code;
       return exitCode;
     }
+    String command = args.removeAt(0);
     if (isDart1) {
-      return await runPub(command.name, extraArgs: command.arguments);
+      return await runPub(command, args);
     } else {
-      return await runBuildRunner(command.name, extraArgs: command.arguments) ??
-          0;
+      return await runBuildRunner(command, args) ?? 0;
     }
   } on FileSystemException catch (e) {
     print(red.wrap('$_boldApp could not run in the current directory.'));
@@ -112,15 +108,15 @@ Future main(List<String> args) async {
   }
 }
 
-Future<int> runPub(String command, {List<String> extraArgs}) async {
+Future<int> runPub(String command, List<String> extraArgs) async {
   var args = <String>[];
   args.add(command);
   args.addAll(extraArgs ?? <String>['']);
-  args.removeWhere((s) => s == null || s.isEmpty);
-
+  print('Running: ' + blue.wrap('pub ${args.join(" ")}'));
   // Start pub
   Process pubProcess = await Process.start('pub', args);
   Completer c = new Completer();
+
   StreamSubscription stdoutSubscription = pubProcess.stdout
       .transform(UTF8.decoder)
       .transform(const LineSplitter())
@@ -146,7 +142,7 @@ Future<int> runPub(String command, {List<String> extraArgs}) async {
       c.completeError(new Exception(line));
       return;
     }
-    print(line);
+    print(red.wrap(line));
   });
   try {
     // Wait for pub serve to begin serving
@@ -159,7 +155,7 @@ Future<int> runPub(String command, {List<String> extraArgs}) async {
   return pubProcess.exitCode;
 }
 
-Future<int> runBuildRunner(String command, {List<String> extraArgs}) async {
+Future<int> runBuildRunner(String command, List<String> extraArgs) async {
   var buildRunnerScript = await _buildRunnerScript();
 
   final arguments = [command]..addAll(extraArgs ?? const []);

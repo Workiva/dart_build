@@ -17,7 +17,7 @@ ENV CODECOV_TOKEN='bQ4MgjJ0G2Y73v8JNX6L7yMK9679nbYB'
 RUN echo "Starting the script sections" && \
 	pub get && \
 	pub publish --dry-run && \
-	dartanalyzer lib && \
+	dartanalyzer bin && \
 	dartfmt -l 80 -n --set-exit-if-changed lib && \
 	tar czvf dart_build.pub.tgz LICENSE README.md pubspec.yaml lib/ && \
 	echo "Script sections completed"
