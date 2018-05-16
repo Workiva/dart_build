@@ -50,16 +50,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:convert';
 import 'package:path/path.dart' as p;
 import 'package:stack_trace/stack_trace.dart';
 import 'package:io/ansi.dart';
 import 'package:io/io.dart';
 
-const appName = 'dart_build';
-const defaultPort = 8080;
+const String appName = 'dart_build';
+const int defaultPort = 8080;
 const List<String> allowedCommands = const <String>['build', 'serve'];
 const List<String> standardDartDirectories = const <String>[
   'web',
@@ -88,8 +88,7 @@ Future main(List<String> args) async {
   try {
     // Manually handle all args since we aren't really parsing them
     // but instead just passing along the List to the appropriate command
-    args ??= [];
-    args.removeWhere((s) => s == null || s.isEmpty);
+    args ??= []..removeWhere((s) => s == null || s.isEmpty);
 
     if (args.isEmpty || !allowedCommands.contains(args[0])) {
       print(red.wrap('Specify pub run $_boldApp build|serve'));
@@ -117,9 +116,9 @@ Future main(List<String> args) async {
 }
 
 Future<int> runPub(String command, List<String> extraArgs) async {
-  var args = <String>[];
-  args.add(command);
-  args.addAll(extraArgs ?? <String>['']);
+  var args = <String>[]
+    ..add(command)
+    ..addAll(extraArgs ?? <String>['']);
   print('Running: ' + blue.wrap('pub ${args.join(" ")}'));
   Process pubProcess = await Process.start('pub', args);
   pubProcess.stdout
@@ -200,8 +199,7 @@ Future<int> runBuildRunner(String command, List<String> args) async {
     }
     if (args.contains('-i')) {
       // enable opting in to interactive
-      args.remove('-i');
-      args.remove('--delete-conflicting-outputs');
+      args..remove('-i')..remove('--delete-conflicting-outputs');
     }
   }
   args.insert(0, command);
@@ -215,14 +213,16 @@ Future<int> runBuildRunner(String command, List<String> args) async {
   var errorPort = new ReceivePort();
   var messagePort = new ReceivePort();
   var errorListener = errorPort.listen((e) {
-    stderr.writeln('\n\nYou have hit a bug in build_runner');
-    stderr.writeln('Please file an issue with reproduction steps at '
-        'https://github.com/dart-lang/build/issues\n\n');
+    stderr
+      ..writeln('\n\nYou have hit a bug in build_runner')
+      ..writeln('Please file an issue with reproduction steps at '
+          'https://github.com/dart-lang/build/issues\n\n');
     final error = e[0];
     final trace = e[1] as String;
-    stderr.writeln(error);
-    stderr.writeln(new Trace.parse(trace).terse);
-    if (exitCode == 0) exitCode = 1;
+    stderr..writeln(error)..writeln(new Trace.parse(trace).terse);
+    if (exitCode == 0) {
+      exitCode = 1;
+    }
   });
 
   try {
@@ -279,8 +279,7 @@ Future<Uri> _buildRunnerScript() async {
       var message = errorList[0] as String;
       var stack = new StackTrace.fromString(errorList[1] as String);
 
-      stderr.writeln(message);
-      stderr.writeln(stack);
+      stderr..writeln(message)..writeln(stack);
     });
 
     var items = await Future.wait([

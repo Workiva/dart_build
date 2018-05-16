@@ -2,7 +2,7 @@ name: dart_build
 version: 0.1.0+dart1
 author: Rob Becker <rob.becker@workiva.com>
 homepage: https://github.com/Workiva/dart_build
-description: A CLI that provides dart 1 and dart 2 compatible build and serve commands
+description: A command line tool that provides Dart 1 & 2 compatible build & serve commands to ease the transition to Dart 2.
 
 # Dart 1
 environment:
